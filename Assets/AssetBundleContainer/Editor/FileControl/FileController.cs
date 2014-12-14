@@ -64,29 +64,17 @@ class FileController {
 		Directory.CreateDirectory(path);
 	}
 
-	public static void CloneWithRenameAsNewExtension (string path, string newExtension) {
-		var targetPath = path + newExtension;
-		
-		if (File.Exists(targetPath)) {
-			Debug.Log("overwrite:" + targetPath);
-			File.Delete(targetPath);
-		}
+	public static void RenameWithNewExtension (string path, string newExtension) {
+		if (path.EndsWith(newExtension)) return;
+		if (path.EndsWith(newExtension + ".meta")) return;
 
-		File.Copy(path, targetPath);
+		var newPath = path + newExtension;
+		// avoid overwrite
+		if (File.Exists(newPath)) return;
+		File.Move(path, newPath);
 	}
 
-	public static void RenameAsNewExtension (string path, string newExtension) {
-		var targetPath = path + newExtension;
-		
-		if (File.Exists(targetPath)) {
-			Debug.Log("overwrite:" + targetPath);
-			File.Delete(targetPath);
-		}
-
-		File.Move(path, targetPath);
-	}
-
-	public static bool CloneWithRemoveExtension (string path, string targetExtension) {
+	public static bool RemoveExtension (string path, string targetExtension) {
 		// Debug.Log("RemoveExtension path:" + path);
 		var targetPath = path.Replace(targetExtension, string.Empty);
 		if (path.EndsWith(targetExtension)) {
@@ -95,7 +83,7 @@ class FileController {
 					Debug.Log("overwrite:" + targetPath);
 					File.Delete(targetPath);
 				}
-				File.Copy(path, targetPath);
+				File.Move(path, targetPath);
 				return true;
 			}
 		}

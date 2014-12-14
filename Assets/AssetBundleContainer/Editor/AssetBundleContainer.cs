@@ -10,140 +10,103 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-class Container {
-	public void Something () {
-		var desitnationPath = "";
-		FileController.Renew(desitnationPath);
+
+class AssetBundleContainer {
+	[MenuItem ("Window/Bundlize", false, 1)]
+	static void AssetBundlize () {
 		
+		// Bundle化したあとのモノの置き場を適当に作る
+		var destinationPath = "Bundlized";
+		FileController.Renew(destinationPath);
+		
+
 		/*
 			deactivate
-			rename everything under the folder for avoiding platform switch based convert.
+			対象が含まれる、すべての「importされると面倒なファイル」を、importされなそうな拡張子にリネームする。
 		*/
 		var deactivateTargetPath = Path.Combine(Application.dataPath, "Resources");
 		var transactionId = Deactivator.DeactivateFilesUnderPath(deactivateTargetPath);
 		
+		var targetFolderName = "BundlizeTarget";
+		var targetFolderPath = Path.Combine(deactivateTargetPath, targetFolderName);
 
-		var bundlizableFolderPaths = Deactivator.DeactivatedDirectoriesUnderPath(transactionId, sourcePath);
-
-		// will be resetted after generate assetBundle in bundlizer runnrers.
+		
+		// 現在のプラットフォームを記録
 		var beforePlatform = EditorUserBuildSettings.activeBuildTarget;
 
-		var destinationPathBySetting = bundlizeOpts.projectBasePath;
-
-		// ここでのフォルダ単位がassetbundleのもとになるすべて、という感じ。
-		// 例えばここで、外部からvirtualな代物を読み込めれば変わる。
-		// ただし、Resourcesフォルダの内部でないと駄目。
-		foreach (var bundlizablePath in bundlizableFolderPaths) {
 			
-			// re-activate this folder's item.
-			var activatedItemPaths = Deactivator.ActivateFilesUnderPath(transactionId, bundlizablePath);
-			var bundlizeTargetPaths = LimitWithSourceFolderLimit(activatedItemPaths, sourcePath);
+		// AssetBundleにする対象のファイルの拡張子だけを戻す(この場合フォルダ単位で戻している)
+		Deactivator.ActivateFilesUnderPath(transactionId, targetFolderPath);
 
-				
-			// /SOMEWHERE/PROJECT/Assets/AssetRails/temp/Resources/prefabricate/sound/titanic in 5 seconds.mp3
-			AssetBundlePathComponent assetPathComp = new AssetBundlePathComponent(bundlizeTargetPaths, activatedItemPaths);
-
-			// generate recommended destination path for output prefab or output other resources.
-			// replace somewhere/PROJECT/Assets -> Assets for Unity's AssetBundleBuild function's default target setting. it aims "Assets/...".
-			var destinationBasePath = desitnationPath.Replace(destinationPathBySetting, "Assets");
-
-			var currentDestinationBundledPath = destinationBasePath;
-			
-			if (!Directory.Exists(currentDestinationBundledPath)) {
-				Directory.CreateDirectory(currentDestinationBundledPath);
-			}
-
-			// run all : ASSETRAILS_PROJECT_RESOURCE_BASEPATH classes as runner.
-			foreach (Type currentType in bundlizerTypeRunners) {
-				var runner = (AssetRails.BundlizerBase)Activator.CreateInstance(currentType);
-
-				runner.Bundlize(assetPathComp.bundleName, assetPathComp.allResourcePaths, assetPathComp.allResourceFullPaths, currentDestinationBundledPath);
-			}
-
-
-			// delete output target folder if empty.
-			if (Directory.GetFiles(currentDestinationBundledPath).Length == 0) {
-				Directory.Delete(currentDestinationBundledPath);
-			}
-
-			// var afterPlatform1 = EditorUserBuildSettings.activeBuildTarget;
-
-			// export assetbundle for reset platform.
+		
+		// iOS用にAssetBundleを作成
+		if (true) {
+			var res = Resources.Load(Path.Combine(targetFolderName, "Yeaaahhhhh"));
+			var targetPlatform = BuildTarget.iPhone;// Unity5だとiOSになったな〜
 			uint crc;
-			var mainAssetObject = Resources.Load(AssetRailsSettings.PLATFORMUPDATER_DUMMY_RESOURCE_NAME);
-			if (mainAssetObject != null) {
+			if (res != null) {
+				BuildPipeline.BuildAssetBundle(
+					res,
+					null,
+					Path.Combine(destinationPath, "Yeaaahhhhh_bundlized_ios"),
+					out crc,
+					BuildAssetBundleOptions.CollectDependencies | BuildAssetBundleOptions.CompleteAssets,
+					targetPlatform
+				);
+			}
+		}
+
+		var afterPlatform1 = EditorUserBuildSettings.activeBuildTarget;
+		Debug.Log("after1:" + afterPlatform1);
+
+
+		// Android用にAssetBundleを作成
+		if (true) {
+			var res = Resources.Load(Path.Combine(targetFolderName, "Yeaaahhhhh"));
+			var targetPlatform = BuildTarget.Android;// Unity5だとiOSになったな〜
+			uint crc;
+			if (res != null) {
+				BuildPipeline.BuildAssetBundle(
+					res,
+					null,
+					Path.Combine(destinationPath, "Yeaaahhhhh_bundlized_android"),
+					out crc,
+					BuildAssetBundleOptions.CollectDependencies | BuildAssetBundleOptions.CompleteAssets,
+					targetPlatform
+				);
+			}
+		}
+
+		var afterPlatform2 = EditorUserBuildSettings.activeBuildTarget;
+		Debug.Log("after2:" + afterPlatform2);
+
+		// リセット
+		if (true) {
+			uint crc;
+			var resetterRes = Resources.Load("dummyText");
+			if (resetterRes != null) {
 
 				BuildPipeline.BuildAssetBundle(
-					mainAssetObject,
+					resetterRes,
 					null,
-					AssetRailsSettings.PLATFORMUPDATER_DUMMY_RESOURCE_OUTPUT_PATH,
+					Path.Combine(destinationPath, "resetter"),
 					out crc,
 					BuildAssetBundleOptions.CollectDependencies | BuildAssetBundleOptions.CompleteAssets,
 					beforePlatform
 				);
 			}
-			// var afterPlatform2 = EditorUserBuildSettings.activeBuildTarget;
-
-			// deactivate all active items which was activated before.
-			Deactivator.ForceDeactivate(transactionId);
 		}
 
+		var afterPlatform3 = EditorUserBuildSettings.activeBuildTarget;
+		Debug.Log("after3:" + afterPlatform3);
+
+		// 無効化していたのを元に戻す
 		Deactivator.RollbackTransaction(transactionId);
 	}
-
-		/**
-		path component of assetBundlize target.
-	*/
-	private class AssetBundlePathComponent {
-		public readonly string bundleName;
-		public readonly List<string> allResourcePaths;
-		public readonly List<string> allResourceFullPaths;
-
-		public AssetBundlePathComponent (List<string> allItemPaths, List<string> allItemFullPaths) {
-			Debug.Log("allItemPaths:" + allItemPaths.Count);
-			foreach (var a in allItemPaths) {
-				Debug.Log("a:" + a);
-			}
-
-			// sound
-			bundleName = Directory.GetParent(allItemPaths[0]).Name;
-			// Debug.Log("bundleName:" + bundleName);
-
-			allResourcePaths = new List<string>();
-
-			foreach (var itemPath in allItemPaths) {
-				// prefabricate/sound/titanic in 5 seconds.mp3
-				var assetInResourcePathSource = Regex.Split(itemPath, AssetRailsSettings.ASSETRAILS_PROJECT_RESOURCE_BASEPATH)[1];
-				
-				/*
-				 generate resource path for Resources.Load enable.
-				 */
-
-				// prefabricate/sound/titanic in 5 seconds
-				var resourcePath = ResourceLoadablePath(itemPath);
-				// Debug.Log("resourcePath:" + resourcePath);
-
-				allResourcePaths.Add(resourcePath);
-			}
-
-			allResourceFullPaths = allItemFullPaths;
-		}
-
-		private string ResourceLoadablePath (string itemPath) {
-			var assetInResourcePathSource = Regex.Split(itemPath, AssetRailsSettings.ASSETRAILS_PROJECT_RESOURCE_BASEPATH)[1];
-			
-			// titanic in 5 seconds
-			var withoutExtFileName = Path.GetFileNameWithoutExtension(assetInResourcePathSource);
-			return Path.Combine(Path.GetDirectoryName(assetInResourcePathSource), withoutExtFileName);
-		}
-
-		private bool NotMetaAndNotFolder (string path) {
-			if (path.EndsWith(".meta")) return false;
-			if (Directory.Exists(path)) return false;
-			return true;
-		}
-
-	}
-
 }
 
+class Importer : UnityEditor.AssetPostprocessor {
+	public void OnPreprocessTexture () {
+		Debug.LogError("assetPath:" + assetPath);
+	}
+}
