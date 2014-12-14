@@ -5,10 +5,12 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
+
 public class AssetBundleContainer {
 	[MenuItem ("Window/Bundlize", false, 1)]
 	static void AssetBundlize () {
-		
+		DateTime start = DateTime.Now;
+
 		// Bundle化したあとのモノの置き場を適当に作る
 		var destinationPath = "Bundlized";
 		FileController.Renew(destinationPath);
@@ -96,6 +98,10 @@ public class AssetBundleContainer {
 
 		// 無効化していたのを元に戻す
 		// Deactivator.RollbackTransaction(transactionId);
+
+		DateTime end = DateTime.Now;
+		TimeSpan ts = end - start;
+		Debug.Log("ts:" + ts);
 	}
 }
 
