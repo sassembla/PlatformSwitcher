@@ -75,7 +75,7 @@ class FileController {
 		File.Copy(path, targetPath);
 	}
 
-	public static void RenameWithNewExtension (string path, string newExtension) {
+	public static void RenameAsNewExtension (string path, string newExtension) {
 		var targetPath = path + newExtension;
 		
 		if (File.Exists(targetPath)) {

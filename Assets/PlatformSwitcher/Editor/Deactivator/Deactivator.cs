@@ -51,7 +51,11 @@ class Deactivator {
 		if (Regex.Match(path, @"[.]deactivate.*[.]meta").Success) return;
 		if (Regex.Match(path, @"[.]deactivate.*").Success) return;
 
-		FileController.CloneWithRenameAsNewExtension(path, ".deactivate" + platformKeyPhrase);
+		if (path.EndsWith(".meta")) {// metaファイルは改名する => 元の奴を消す
+			FileController.RenameAsNewExtension(path, ".deactivate" + platformKeyPhrase);
+		} else {// それ以外のファイルはコピーする
+
+		}
 		Debug.Log("Deactivated:" + path);
 	}
 
