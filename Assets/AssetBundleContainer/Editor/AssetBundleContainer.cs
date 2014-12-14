@@ -21,7 +21,7 @@ public class AssetBundleContainer {
 			対象が含まれる、すべての「importされると面倒なファイル」を、importされなそうな拡張子にリネームする。
 		*/
 		var deactivateTargetPath = Path.Combine(Application.dataPath, "Resources");
-		// var transactionId = Deactivator.DeactivateFilesUnderPath(deactivateTargetPath);
+		var transactionId = Deactivator.DeactivateFilesUnderPath(deactivateTargetPath);
 		
 		var targetFolderName = "BundlizeTarget";
 		var targetFolderPath = Path.Combine(deactivateTargetPath, targetFolderName);
@@ -32,7 +32,7 @@ public class AssetBundleContainer {
 
 			
 		// AssetBundleにする対象のファイルの拡張子だけを戻す(この場合フォルダ単位で戻している)
-		// Deactivator.ActivateFilesUnderPath(transactionId, targetFolderPath);
+		Deactivator.ActivateFilesUnderPath(transactionId, targetFolderPath);
 
 		
 		// iOS用にAssetBundleを作成
@@ -97,7 +97,7 @@ public class AssetBundleContainer {
 		Debug.Log("after3:" + afterPlatform3);
 
 		// 無効化していたのを元に戻す
-		// Deactivator.RollbackTransaction(transactionId);
+		Deactivator.RollbackTransaction(transactionId);
 
 		DateTime end = DateTime.Now;
 		TimeSpan ts = end - start;
@@ -109,4 +109,20 @@ class Importer : UnityEditor.AssetPostprocessor {
 	public void OnPreprocessTexture () {
 		Debug.LogError("assetPath:" + assetPath);
 	}
+}
+
+
+class MenuItemStatus {
+	#if UNITY_IPHONE
+	[MenuItem ("Window/currentPlatform/Now: iOS Platform", false, 1)]
+
+	#elif UNITY_ANDROID
+	[MenuItem ("Window/currentPlatform/Now: Android Platform", false, 1)]
+
+	#elif UNITY_STANDALONE_OSX
+	[MenuItem ("Window/currentPlatform/Now: OSX Platform", false, 1)]
+
+	#endif
+	public static void CurrentPlatform () {}// こいつは実際どうでもいい、ただメニューでぶったたかれる関数が必要。気に喰わなければdisableにすればより良い。
+
 }
